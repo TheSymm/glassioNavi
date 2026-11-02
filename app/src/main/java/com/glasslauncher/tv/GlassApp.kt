@@ -139,6 +139,8 @@ class GlassApp : Application(), coil3.SingletonImageLoader.Factory {
         // If Glass was closed while the TV screensaver was being started, put the screen timeout back.
         Thread { com.glasslauncher.tv.saver.SystemDream.restoreIfPending(this) }.apply { isDaemon = true }.start()
         icons.importDropFolder(apps.apps.value.map { it.pkg })
+        // Icons that ship with this build (WuPlay, Punktfunk, TizenTube) go into the icon library once.
+        scope.launch(kotlinx.coroutines.Dispatchers.IO) { com.glasslauncher.tv.data.TextIcons.installBundled(this@GlassApp) }
         ensureHomeService()
         // Decode dock artwork once, off the main thread, so the first frames are instant.
         scope.launch { apps.apps.value.forEach { runCatching { apps.artwork(it) } } }

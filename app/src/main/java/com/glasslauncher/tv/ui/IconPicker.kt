@@ -73,6 +73,8 @@ import kotlinx.coroutines.withContext
 private sealed interface IconSource {
     val title: String
     object Suggested : IconSource { override val title = "Suggested" }
+    /** The app's name as lettering, made here (data/TextIcons.kt). */
+    object TextIcon : IconSource { override val title = "Text icon" }
     class Pack(val pkg: String, override val title: String) : IconSource
     object Photos : IconSource { override val title = "Photos on this TV" }
     /** Apple TV home-screen icons copied to the TV (tools/appletv_icons.py): default, dark, white, clear. */
@@ -112,6 +114,7 @@ fun IconPicker(app: GlassApp, entry: AppEntry, onPhone: () -> Unit, onClose: () 
     val sources = remember {
         buildList {
             add(IconSource.Suggested)
+            add(IconSource.TextIcon)
             ATV_VARIANTS.forEach { (v, title) -> if (atvFiles(ctx, v).isNotEmpty()) add(IconSource.AppleTv(v, title)) }
             packs.forEach { add(IconSource.Pack(it.pkg, it.label)) }
             add(IconSource.Photos); add(IconSource.Link); add(IconSource.Phone); add(IconSource.Original)
@@ -190,6 +193,12 @@ fun IconPicker(app: GlassApp, entry: AppEntry, onPhone: () -> Unit, onClose: () 
                         if (atv.isNotEmpty()) FileGrid(s, atv, labelled = true) { applyUri(Uri.fromFile(it)) }
                         else PackGrid(app, s, suggested(app, entry), "No pack has an icon that matches this app. Pick a pack on the left to browse all its icons.") { applyPack(it) }
                     }
+                    IconSource.TextIcon -> TextMaker(app, s, entry, onEdit = { d -> dialog = d }) { bytes ->
+                        scope.launch {
+                            val r = withContext(Dispatchers.IO) { runCatching { app.icons.setFromBytes(entry.pkg, bytes) } }
+                            done(if (r.isSuccess) "Icon updated" else r.exceptionOrNull()?.message ?: "Failed")
+                        }
+                    }
                     is IconSource.AppleTv -> FileGrid(s, remember(src.variant) { atvFiles(ctx, src.variant) }, labelled = false) { applyUri(Uri.fromFile(it)) }
                     is IconSource.Pack -> PackGrid(app, s, allOf(app, src.pkg), "This pack has no icons.") { applyPack(it) }
                     IconSource.Photos -> PhotoGrid(app, s) { applyUri(it) }
@@ -201,7 +210,7 @@ fun IconPicker(app: GlassApp, entry: AppEntry, onPhone: () -> Unit, onClose: () 
     DialogHost(dialog) { dialog = null }
 }
 
-private fun IconSource.isBrowsable() = this is IconSource.Suggested || this is IconSource.Pack || this is IconSource.Photos || this is IconSource.AppleTv
+private fun IconSource.isBrowsable() = this is IconSource.Suggested || this is IconSource.TextIcon || this is IconSource.Pack || this is IconSource.Photos || this is IconSource.AppleTv
 
 @Composable
 private fun FileGrid(s: Float, files: List<java.io.File>, labelled: Boolean, onPick: (java.io.File) -> Unit) {
@@ -352,6 +361,63 @@ private fun PickTile(s: Float, label: String?, onClick: () -> Unit, content: @Co
             Spacer(Modifier.height((3 * s).dp))
             Text(label, color = Color.White.copy(alpha = if (focused) 1f else 0.55f), fontSize = (9 * s).sp, maxLines = 1,
                 overflow = TextOverflow.Ellipsis, textAlign = TextAlign.Center)
+        }
+    }
+}
+
+/**
+ * Text icon maker: the app's name (editable) in a style, shown in all four looks. Picking a look sets it as the
+ * app's icon and saves every look to the icon library, where it shows under the Apple TV looks from then on.
+ */
+@Composable
+private fun TextMaker(app: GlassApp, s: Float, entry: AppEntry, onEdit: (DialogState) -> Unit, onPick: (ByteArray) -> Unit) {
+    val ctx = LocalContext.current
+    val scope = rememberCoroutineScope()
+    var text by remember(entry.pkg) { mutableStateOf(entry.label) }
+    var style by remember { mutableStateOf(com.glasslauncher.tv.data.TextIcons.Style.Title) }
+    val looks by produceState<List<Pair<String, android.graphics.Bitmap>>?>(null, text, style) {
+        value = null
+        value = withContext(Dispatchers.Default) {
+            val m = com.glasslauncher.tv.data.TextIcons.mask(ctx, text, style)
+            com.glasslauncher.tv.data.TextIcons.VARIANTS.map { v ->
+                val full = com.glasslauncher.tv.data.TextIcons.look(m, style, v)
+                v to android.graphics.Bitmap.createScaledBitmap(full, 480, 288, true).also { if (it !== full) full.recycle() }
+            }.also { m.recycle() }
+        }
+    }
+    Column(Modifier.fillMaxSize().padding((14 * s).dp)) {
+        Row(horizontalArrangement = Arrangement.spacedBy((8 * s).dp), verticalAlignment = Alignment.CenterVertically) {
+            PickButton("Text: $text", s) {
+                onEdit(TextEntry("Icon text · ${entry.label}", text, entry.label) { v -> if (v.isNotBlank()) text = v.trim() })
+            }
+            com.glasslauncher.tv.data.TextIcons.Style.values().forEach { st ->
+                PickButton((if (st == style) "● " else "") + st.label, s) { style = st }
+            }
+        }
+        Spacer(Modifier.height((12 * s).dp))
+        val list = looks
+        if (list == null) { Hint("Drawing…", s); return@Column }
+        LazyVerticalGrid(
+            columns = GridCells.Adaptive((150 * s).dp),
+            horizontalArrangement = Arrangement.spacedBy((12 * s).dp),
+            verticalArrangement = Arrangement.spacedBy((12 * s).dp),
+        ) {
+            items(list, key = { it.first }) { (v, bmp) ->
+                val img = remember(bmp) { bmp.asImageBitmap() }
+                PickTile(s, v.replaceFirstChar { it.uppercase() }, onClick = {
+                    scope.launch {
+                        val bytes = withContext(Dispatchers.IO) {
+                            val m = com.glasslauncher.tv.data.TextIcons.mask(ctx, text, style)
+                            runCatching { com.glasslauncher.tv.data.TextIcons.saveToLibrary(ctx, text, m, style) }
+                            val full = com.glasslauncher.tv.data.TextIcons.look(m, style, v)
+                            com.glasslauncher.tv.data.TextIcons.png(full).also { full.recycle(); m.recycle() }
+                        }
+                        onPick(bytes)
+                    }
+                }) {
+                    Image(img, contentDescription = null, contentScale = ContentScale.Fit, modifier = Modifier.fillMaxSize())
+                }
+            }
         }
     }
 }
