@@ -427,9 +427,12 @@ class Settings(private val ctx: Context) {
     var bgInfoWeather: Boolean get() = b("bgInfoWeather", false); set(v) = putB("bgInfoWeather", v)
     /** Pictures kept on the TV for the Photos background (oldest go first), in MB. */
     var photoCacheMb: Int get() = i("photoCacheMb", 1024); set(v) = putI("photoCacheMb", v.coerceIn(100, 8192))
-    /** Apps that ask for the 4-digit code when opened from Glassio. */
+    /** Apps that ask for the arrow code when opened from Glassio. */
     var lockedApps: List<String> get() = list("lockedApps"); set(v) = putList("lockedApps", v)
+    @Deprecated("Replaced by lockSeq (arrow code)")
     var lockCode: String get() = s("lockCode", "0000"); set(v) = putS("lockCode", v.filter { it.isDigit() }.take(4).padStart(4, '0'))
+    /** The app-lock code: 4 to 8 remote arrow presses stored as U/D/L/R (e.g. "UUDLRL"). Empty = none set yet (OK opens). */
+    var lockSeq: String get() = s("lockSeq", ""); set(v) = putS("lockSeq", v.filter { it in "UDLR" }.take(AppLockSeq.MAX))
 
     /** Existing installs skip the first-run setup (it is for new TVs). */
     fun firstRun() { if (!sp.contains("setupDone")) putB("setupDone", sp.all.size > 8) }
@@ -456,3 +459,7 @@ class Settings(private val ctx: Context) {
     /** The first-run setup was finished (or skipped with Later). */
     var setupDone: Boolean get() = b("setupDone", false); set(v) = putB("setupDone", v)
 }
+
+
+/** Limits for the arrow code, shared by Settings and the lock window. */
+object AppLockSeq { const val MIN = 4; const val MAX = 8 }

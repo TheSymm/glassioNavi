@@ -721,7 +721,7 @@ fun HomeScreen(app: GlassApp, screen: Screen, onScreen: (Screen) -> Unit) {
                 )
             }
             DialogHost(dialog) { dialog = null }
-            // The 4-digit code for a locked app (or to change the code).
+            // The arrow code for a locked app (or to change the code).
             AppLockHost(app, s, settings.menuStyle)
             PopMenuHost(pop, s, settings.menuStyle) {
                 pop = null
@@ -751,7 +751,7 @@ private fun appMenu(
     if (startMove != null) opts += "Move" to startMove
     opts += "Change icon" to pickIcon
     opts += (if (hidden) "Show in dock" else "Hide") to { app.apps.toggleHidden(e.pkg) }
-    // Asks for the 4-digit code when opened from Glassio (Settings → System sets the code).
+    // Asks for the arrow code when opened from Glassio (Settings → System sets the code).
     opts += (if (AppLock.locked(app, e.pkg)) "Unlock" else "Lock") to { AppLock.toggle(app, ctx, e) }
     return MenuDialog(e.label, opts)
 }

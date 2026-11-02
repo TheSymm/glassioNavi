@@ -947,13 +947,13 @@ fun SettingsScreen(app: GlassApp, initialCat: Int, onClose: () -> Unit) {
             val adbOn = runCatching { AndroidSettings.Global.getInt(ctx.contentResolver, AndroidSettings.Global.ADB_ENABLED, 0) == 1 }.getOrDefault(false)
             listOf(
                 Note("App lock (only when opened from Glassio)"),
-                Act("Change the code", "4 digits, 0000 at first. Asks for the current code, then the new one: OK saves it (the same code again is fine too)",
+                Act("Change the code", "4 to 8 arrow presses (▲ ▼ ◀ ▶). None at first: OK opens. Asks for the current code, then the new one: OK saves it",
                     "${st.lockedApps.size} locked") { AppLock.change(app, ctx) },
-                Toggle("Show a hint", "Your own words under the digits", { st.lockHintOn }, { st.lockHintOn = it }),
+                Toggle("Show a hint", "Your own words under the code", { st.lockHintOn }, { st.lockHintOn = it }),
                 Act("Hint", "Anything you like (even the code itself)", st.lockHint.ifBlank { "Not set" }) {
-                    dialog = TextEntry("Hint under the digits", st.lockHint, "e.g. year we met") { v -> st.lockHint = v.trim(); if (v.isNotBlank()) st.lockHintOn = true }
+                    dialog = TextEntry("Hint under the code", st.lockHint, "e.g. year we met") { v -> st.lockHint = v.trim(); if (v.isNotBlank()) st.lockHintOn = true }
                 },
-                Note("Lock an app: hold OK on it in the dock → Lock. It then asks for the code when opened from Glassio: ▲ ▼ change a digit, ◀ ▶ move, and it opens as soon as the code is right."),
+                Note("Lock an app: hold OK on it in the dock → Lock. It then asks for the code when opened from Glassio: press your arrow sequence and it opens as soon as it is right. OK clears a wrong try."),
                 Toggle("Home button opens Glassio", "Needs the accessibility service below", { st.interceptHome }, { st.interceptHome = it }),
                 Act("Turn on the accessibility service", "Find Glassio and switch it on", "") { openSystem(ctx, AndroidSettings.ACTION_ACCESSIBILITY_SETTINGS) },
                 Act("Turn it on with ADB", if (homeKeyOn) "The accessibility service is on" else "When the TV doesn't let you (restricted setting / greyed out). Needs TV access (ADB), below", "") {

@@ -34,7 +34,7 @@ Tested on the Google TV Streamer (4K).
   setting apply to it, and it follows a video background live.
 - **Depth effect** for photos: the subject comes in front of the clock (done on the TV with a small depth model,
   only for pictures).
-- **App lock**: lock any app with a 4-digit code (0000 by default). Hold OK on it → Lock. A glass code window opens it
+- **App lock**: lock any app with an arrow code (4 to 8 presses of ▲ ▼ ◀ ▶). Hold OK on it → Lock. A glass code window opens it
   as soon as the code is right, with an optional hint. Only apps opened from Glassio are locked.
 - **Doorbell from Home Assistant**: the camera pops up in the corner over any app, with a soft chime and your own words
   (ready-made Arabic or English). See [Doorbell](#doorbell-pop-up).
@@ -133,7 +133,7 @@ Tested on the Google TV Streamer (4K).
   screensaver's videos, with Next, Shuffle, a cache, place and credit, a large glass clock and a depth effect for photos.
 
 **App lock**
-- A 4-digit code for any app opened from Glassio (Settings → System), with an optional hint.
+- An arrow-button code (4 to 8 presses) for any app opened from Glassio (Settings → System), with an optional hint.
 
 **Dock & icons**
 - 6 apps per row, Apps folder with every app, move / hide / change icon / app info (hold OK).
