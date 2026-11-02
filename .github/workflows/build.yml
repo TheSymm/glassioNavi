@@ -32,6 +32,14 @@ jobs:
         run: ./gradlew --no-daemon lintDebug
       - name: Build the APK
         run: ./gradlew --no-daemon assembleDebug
+      # The optimised build (R8 + baseline profile): the one to install on the TV. The debug build runs far slower.
+      - name: Build the release APK
+        run: ./gradlew --no-daemon assembleRelease
+      - uses: actions/upload-artifact@v4
+        with:
+          name: glassio-release
+          path: app/build/outputs/apk/release/*.apk
+          retention-days: 30
       - uses: actions/upload-artifact@v4
         if: always()
         with:
