@@ -386,11 +386,14 @@ private fun TextMaker(app: GlassApp, s: Float, entry: AppEntry, onEdit: (DialogS
         }
     }
     Column(Modifier.fillMaxSize().padding((14 * s).dp)) {
-        Row(horizontalArrangement = Arrangement.spacedBy((8 * s).dp), verticalAlignment = Alignment.CenterVertically) {
-            PickButton("Text: $text", s) {
-                onEdit(TextEntry("Icon text · ${entry.label}", text, entry.label) { v -> if (v.isNotBlank()) text = v.trim() })
-            }
-            com.glasslauncher.tv.data.TextIcons.Style.values().forEach { st ->
+        PickButton("Text: $text", s) {
+            onEdit(TextEntry("Icon text · ${entry.label}", text, entry.label) { v -> if (v.isNotBlank()) text = v.trim() })
+        }
+        Spacer(Modifier.height((8 * s).dp))
+        // All the styles in one scrolling row (◀ ▶ to move along it).
+        androidx.compose.foundation.lazy.LazyRow(horizontalArrangement = Arrangement.spacedBy((8 * s).dp)) {
+            items(com.glasslauncher.tv.data.TextIcons.Style.values().size) { i ->
+                val st = com.glasslauncher.tv.data.TextIcons.Style.values()[i]
                 PickButton((if (st == style) "● " else "") + st.label, s) { style = st }
             }
         }
