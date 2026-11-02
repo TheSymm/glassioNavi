@@ -72,6 +72,7 @@ import kotlinx.coroutines.withContext
 
 private sealed interface IconSource {
     val title: String
+    object Rename : IconSource { override val title = "Rename" }
     object Suggested : IconSource { override val title = "Suggested" }
     /** The app's name as lettering, made here (data/TextIcons.kt). */
     object TextIcon : IconSource { override val title = "Text icon" }
@@ -113,6 +114,7 @@ fun IconPicker(app: GlassApp, entry: AppEntry, onPhone: () -> Unit, onClose: () 
     val packs = remember { app.packs.installed() }
     val sources = remember {
         buildList {
+            add(IconSource.Rename)
             add(IconSource.Suggested)
             add(IconSource.TextIcon)
             ATV_VARIANTS.forEach { (v, title) -> if (atvFiles(ctx, v).isNotEmpty()) add(IconSource.AppleTv(v, title)) }
@@ -120,7 +122,7 @@ fun IconPicker(app: GlassApp, entry: AppEntry, onPhone: () -> Unit, onClose: () 
             add(IconSource.Photos); add(IconSource.Link); add(IconSource.Phone); add(IconSource.Original)
         }
     }
-    var sel by remember { mutableIntStateOf(0) }
+    var sel by remember { mutableIntStateOf(1) }
     var dialog by remember { mutableStateOf<DialogState?>(null) }
     val first = remember { FocusRequester() }
     var rightFocused by remember { mutableStateOf(false) }
@@ -171,6 +173,12 @@ fun IconPicker(app: GlassApp, entry: AppEntry, onPhone: () -> Unit, onClose: () 
                                                     val r = withContext(Dispatchers.IO) { runCatching { app.icons.setFromUrl(entry.pkg, u.trim()) } }
                                                     done(if (r.isSuccess) "Icon updated" else r.exceptionOrNull()?.message ?: "Failed")
                                                 }
+                                            }
+                                            IconSource.Rename -> dialog = TextEntry(
+                                                "Name · ${entry.original}", entry.label, "Leave empty for \"${entry.original}\"",
+                                            ) { v ->
+                                                app.apps.rename(entry.pkg, v)
+                                                done(if (v.isBlank()) "Back to \"${entry.original}\"" else "Renamed to \"${v.trim()}\"")
                                             }
                                             IconSource.Phone -> { onClose(); onPhone() }
                                             IconSource.Original -> { app.icons.reset(entry.pkg); done("Back to the original icon") }

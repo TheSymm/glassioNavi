@@ -427,6 +427,11 @@ class Settings(private val ctx: Context) {
     var bgInfoWeather: Boolean get() = b("bgInfoWeather", false); set(v) = putB("bgInfoWeather", v)
     /** Pictures kept on the TV for the Photos background (oldest go first), in MB. */
     var photoCacheMb: Int get() = i("photoCacheMb", 1024); set(v) = putI("photoCacheMb", v.coerceIn(100, 8192))
+    /** Names you gave apps (Icon menu → Rename), one "package|name" per line; the TV's own name is used otherwise. */
+    var appNames: Map<String, String>
+        get() = list("appNames").mapNotNull { l -> l.split('|', limit = 2).takeIf { it.size == 2 && it[1].isNotBlank() }?.let { it[0] to it[1] } }.toMap()
+        set(v) = putList("appNames", v.filterValues { it.isNotBlank() }.map { (k, n) -> k + "|" + n.replace('\n', ' ').trim() })
+
     /** Apps that ask for the arrow code when opened from Glassio. */
     var lockedApps: List<String> get() = list("lockedApps"); set(v) = putList("lockedApps", v)
     @Deprecated("Replaced by lockSeq (arrow code)")

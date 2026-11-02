@@ -17,7 +17,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.withContext
 
-data class AppEntry(val pkg: String, val label: String, val component: ComponentName, val leanback: Boolean)
+/** [label] is the name shown (yours, if you renamed the app); [original] is the TV's own name for it. */
+data class AppEntry(val pkg: String, val label: String, val component: ComponentName, val leanback: Boolean, val original: String = label)
 
 data class Art(val bmp: ImageBitmap, val transparent: Boolean, val light: Boolean = false, val onLight: ImageBitmap = bmp)
 
@@ -46,7 +47,14 @@ class AppRepository(private val ctx: Context, private val settings: Settings, pr
         runCatching { ctx.registerReceiver(receiver, f) }
     }
 
+    /** Gives [pkg] your own name everywhere in Glassio; blank puts the TV's name back. */
+    fun rename(pkg: String, name: String) {
+        settings.appNames = settings.appNames.toMutableMap().apply { if (name.isBlank()) remove(pkg) else put(pkg, name.trim()) }
+        reload()
+    }
+
     fun reload() {
+        val names = settings.appNames
         val found = linkedMapOf<String, AppEntry>()
         fun scan(category: String, leanback: Boolean) {
             val intent = Intent(Intent.ACTION_MAIN).addCategory(category)
@@ -55,7 +63,7 @@ class AppRepository(private val ctx: Context, private val settings: Settings, pr
                 if (ai.packageName == ctx.packageName) continue
                 if (found.containsKey(ai.packageName)) continue
                 val label = runCatching { ri.loadLabel(pm).toString() }.getOrDefault("").ifBlank { ai.packageName.substringAfterLast('.') }
-                found[ai.packageName] = AppEntry(ai.packageName, label, ComponentName(ai.packageName, ai.name), leanback)
+                found[ai.packageName] = AppEntry(ai.packageName, names[ai.packageName] ?: label, ComponentName(ai.packageName, ai.name), leanback, label)
             }
         }
         scan(Intent.CATEGORY_LEANBACK_LAUNCHER, true)
