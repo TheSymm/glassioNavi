@@ -52,7 +52,14 @@ object TextIcons {
         .getOrElse { Typeface.create(Typeface.MONOSPACE, Typeface.BOLD) }.also { mono = it }
 
     /** The lettering alone, white on transparent (the "clear" look; the others are built on it). */
-    fun mask(ctx: Context, text: String, style: Style): Bitmap {
+    fun mask(ctx: Context, text: String, style: Style, dy: Int = 0): Bitmap {
+        val m = draw(ctx, text, style)
+        if (dy == 0) return m
+        // Moved down (positive) or up (negative) by dy pixels of the 1280 × 768 icon.
+        return blank().also { Canvas(it).drawBitmap(m, 0f, dy.toFloat(), null); m.recycle() }
+    }
+
+    private fun draw(ctx: Context, text: String, style: Style): Bitmap {
         val t = text.trim().ifEmpty { "App" }
         return when (style) {
             Style.Title -> title(ctx, t)

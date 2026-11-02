@@ -375,10 +375,12 @@ private fun TextMaker(app: GlassApp, s: Float, entry: AppEntry, onEdit: (DialogS
     val scope = rememberCoroutineScope()
     var text by remember(entry.pkg) { mutableStateOf(entry.label) }
     var style by remember { mutableStateOf(com.glasslauncher.tv.data.TextIcons.Style.Title) }
-    val looks by produceState<List<Pair<String, android.graphics.Bitmap>>?>(null, text, style) {
+    // Vertical nudge in icon pixels (1280 × 768): + is lower, − is higher, 10 per press.
+    var dy by remember(entry.pkg) { mutableIntStateOf(0) }
+    val looks by produceState<List<Pair<String, android.graphics.Bitmap>>?>(null, text, style, dy) {
         value = null
         value = withContext(Dispatchers.Default) {
-            val m = com.glasslauncher.tv.data.TextIcons.mask(ctx, text, style)
+            val m = com.glasslauncher.tv.data.TextIcons.mask(ctx, text, style, dy)
             com.glasslauncher.tv.data.TextIcons.VARIANTS.map { v ->
                 val full = com.glasslauncher.tv.data.TextIcons.look(m, style, v)
                 v to android.graphics.Bitmap.createScaledBitmap(full, 480, 288, true).also { if (it !== full) full.recycle() }
@@ -386,8 +388,17 @@ private fun TextMaker(app: GlassApp, s: Float, entry: AppEntry, onEdit: (DialogS
         }
     }
     Column(Modifier.fillMaxSize().padding((14 * s).dp)) {
-        PickButton("Text: $text", s) {
-            onEdit(TextEntry("Icon text · ${entry.label}", text, entry.label) { v -> if (v.isNotBlank()) text = v.trim() })
+        Row(horizontalArrangement = Arrangement.spacedBy((8 * s).dp), verticalAlignment = Alignment.CenterVertically) {
+            PickButton("Text: $text", s) {
+                onEdit(TextEntry("Icon text · ${entry.label}", text, entry.label) { v -> if (v.isNotBlank()) text = v.trim() })
+            }
+            PickButton("▲ Higher", s) { dy = (dy - 10).coerceAtLeast(-300) }
+            PickButton("▼ Lower", s) { dy = (dy + 10).coerceAtMost(300) }
+            if (dy != 0) PickButton("Centre", s) { dy = 0 }
+            Text(
+                when { dy == 0 -> "Centred"; dy > 0 -> "$dy px lower"; else -> "${-dy} px higher" },
+                color = Color.White.copy(alpha = 0.6f), fontSize = (11 * s).sp,
+            )
         }
         Spacer(Modifier.height((8 * s).dp))
         // All the styles in one scrolling row (◀ ▶ to move along it).
@@ -410,7 +421,7 @@ private fun TextMaker(app: GlassApp, s: Float, entry: AppEntry, onEdit: (DialogS
                 PickTile(s, v.replaceFirstChar { it.uppercase() }, onClick = {
                     scope.launch {
                         val bytes = withContext(Dispatchers.IO) {
-                            val m = com.glasslauncher.tv.data.TextIcons.mask(ctx, text, style)
+                            val m = com.glasslauncher.tv.data.TextIcons.mask(ctx, text, style, dy)
                             runCatching { com.glasslauncher.tv.data.TextIcons.saveToLibrary(ctx, text, m, style) }
                             val full = com.glasslauncher.tv.data.TextIcons.look(m, style, v)
                             com.glasslauncher.tv.data.TextIcons.png(full).also { full.recycle(); m.recycle() }
