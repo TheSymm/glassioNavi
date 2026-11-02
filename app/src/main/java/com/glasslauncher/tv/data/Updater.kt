@@ -40,7 +40,11 @@ class Updater(private val ctx: Context, private val scope: CoroutineScope) {
     val status = MutableStateFlow("")
     val lastCheck = MutableStateFlow(0L)
 
+    /** Off in this personal build: it is signed with a different key, so official releases could not install. */
+    private val enabled = false
+
     fun start() {
+        if (!enabled) return
         scope.launch(Dispatchers.IO) {
             delay(8_000)
             while (true) { check(); delay(12 * 3600_000L) }
@@ -48,7 +52,7 @@ class Updater(private val ctx: Context, private val scope: CoroutineScope) {
     }
 
     /** Returns a message for the Settings toast. */
-    fun check(): String = try {
+    fun check(): String = if (!enabled) "Updates are off in this personal build" else try {
         val c = URL(API).openConnection() as HttpURLConnection
         c.connectTimeout = 8000; c.readTimeout = 12000
         c.setRequestProperty("Accept", "application/vnd.github+json")
@@ -84,6 +88,7 @@ class Updater(private val ctx: Context, private val scope: CoroutineScope) {
     }
 
     fun install() {
+        if (!enabled) return
         val r = available.value ?: return
         scope.launch(Dispatchers.IO) {
             try {
