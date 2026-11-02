@@ -41,6 +41,26 @@ object TextIcons {
         Badge("Badge", 0xFF2563EB.toInt(), 0xFF172554.toInt()),
         Shadow("Shadow", 0xFFF97316.toInt(), 0xFF431407.toInt()),
         Terminal("Terminal", 0xFF16A34A.toInt(), 0xFF052E16.toInt()),
+        Italic("Italic", 0xFF8B5CF6.toInt(), 0xFF2E1065.toInt()),
+        Wide("Wide", 0xFF0EA5E9.toInt(), 0xFF082F49.toInt()),
+        Squash("Squash", 0xFFF43F5E.toInt(), 0xFF4C0519.toInt()),
+        Underline("Underline", 0xFF14B8A6.toInt(), 0xFF042F2E.toInt()),
+        Strike("Strike", 0xFF64748B.toInt(), 0xFF0F172A.toInt()),
+        Boxed("Boxed", 0xFF3B82F6.toInt(), 0xFF172554.toInt()),
+        Inverted("Inverted", 0xFFA855F7.toInt(), 0xFF3B0764.toInt()),
+        Echo("Echo", 0xFFF97316.toInt(), 0xFF431407.toInt()),
+        Glitch("Glitch", 0xFFEC4899.toInt(), 0xFF1E1B4B.toInt()),
+        Halftone("Halftone", 0xFFEAB308.toInt(), 0xFF713F12.toInt()),
+        Stripes("Stripes", 0xFF22C55E.toInt(), 0xFF052E16.toInt()),
+        SmallCaps("Small caps", 0xFF78716C.toInt(), 0xFF1C1917.toInt()),
+        Casual("Casual", 0xFFFB923C.toInt(), 0xFF7C2D12.toInt()),
+        Mono("Mono", 0xFF52525B.toInt(), 0xFF09090B.toInt()),
+        Fade("Fade", 0xFF6366F1.toInt(), 0xFF1E1B4B.toInt()),
+        Wave("Wave", 0xFF06B6D4.toInt(), 0xFF083344.toInt()),
+        Stacked("Stacked", 0xFFEF4444.toInt(), 0xFF450A0A.toInt()),
+        Arc("Arc", 0xFF84CC16.toInt(), 0xFF1A2E05.toInt()),
+        Tilt("Tilt", 0xFFD946EF.toInt(), 0xFF4A044E.toInt()),
+        Sticker("Sticker", 0xFFF59E0B.toInt(), 0xFF451A03.toInt()),
     }
 
     private const val INK = 0xFF121214.toInt()
@@ -91,6 +111,26 @@ object TextIcons {
             Style.Badge -> badge(ctx, t)
             Style.Shadow -> shadow(ctx, t)
             Style.Terminal -> terminal(ctx, t.lowercase())
+            Style.Italic -> simple(white().apply { typeface = poppins(ctx); textSkewX = -0.25f }, t, BOX_W - 40f, 320f)
+            Style.Wide -> simple(white().apply { typeface = poppins(ctx); textScaleX = 1.4f; letterSpacing = 0.04f }, t.uppercase(), BOX_W, 220f)
+            Style.Squash -> simple(white().apply { typeface = poppins(ctx); textScaleX = 0.62f }, t.uppercase(), 760f, 330f)
+            Style.Underline -> underline(ctx, t)
+            Style.Strike -> strike(t.uppercase())
+            Style.Boxed -> boxed(t.uppercase())
+            Style.Inverted -> inverted(ctx, t)
+            Style.Echo -> echo(ctx, t)
+            Style.Glitch -> glitch(ctx, t.uppercase())
+            Style.Halftone -> pattern(ctx, t, dots = true)
+            Style.Stripes -> pattern(ctx, t.uppercase(), dots = false)
+            Style.SmallCaps -> simple(white().apply { typeface = sys("sans-serif-smallcaps"); letterSpacing = 0.1f }, t, BOX_W, 220f)
+            Style.Casual -> simple(white().apply { typeface = sys("casual", true) }, t, BOX_W, 300f)
+            Style.Mono -> simple(white().apply { typeface = Typeface.MONOSPACE; letterSpacing = 0.08f }, t.lowercase(), BOX_W, 200f)
+            Style.Fade -> fade(ctx, t)
+            Style.Wave -> wave(ctx, t)
+            Style.Stacked -> stacked(ctx, t.uppercase())
+            Style.Arc -> arc(ctx, t.uppercase())
+            Style.Tilt -> tilt(ctx, t)
+            Style.Sticker -> sticker(ctx, t)
         }
     }
 
@@ -290,6 +330,160 @@ object TextIcons {
         val cx = lastX + p.measureText("$line ")
         val fm = p.fontMetrics
         c.drawRect(cx, lastY + fm.ascent * 0.72f, cx + cw, lastY + fm.descent * 0.4f, white())
+        return b
+    }
+
+    // ---- the twenty added later --------------------------------------------------------------------------
+
+    private val dstIn get() = Paint(Paint.FILTER_BITMAP_FLAG).apply { xfermode = PorterDuffXfermode(PorterDuff.Mode.DST_IN) }
+
+    /** Bold type with a thick bar underneath. */
+    private fun underline(ctx: Context, text: String): Bitmap {
+        val b = blank(); val c = Canvas(b)
+        val r = fitText(c, text, white().apply { typeface = poppins(ctx) }, BOX_W, 260f, cy = H / 2f - 30f)
+        val h = (r.height() * 0.09f).coerceIn(10f, 26f)
+        c.drawRect(r.left, r.bottom + h * 2.2f, r.right, r.bottom + h * 3.2f, white())
+        return b
+    }
+
+    /** Light capitals with a line through the middle. */
+    private fun strike(text: String): Bitmap {
+        val b = blank(); val c = Canvas(b)
+        val r = fitText(c, text, white().apply { typeface = sys("sans-serif-light"); letterSpacing = 0.1f }, BOX_W - 60f, 200f)
+        val h = (r.height() * 0.07f).coerceIn(6f, 16f)
+        c.drawRect(r.left - 30f, r.centerY() - h / 2, r.right + 30f, r.centerY() + h / 2, white())
+        return b
+    }
+
+    /** Spaced capitals inside a square frame. */
+    private fun boxed(text: String): Bitmap {
+        val b = blank(); val c = Canvas(b)
+        val r = fitText(c, text, white().apply { typeface = sys("sans-serif-medium"); letterSpacing = 0.16f }, BOX_W - 160f, 150f)
+        val box = RectF(r.left - 70f, r.top - 60f, r.right + 70f, r.bottom + 60f)
+        c.drawRect(box, white().apply { style = Paint.Style.STROKE; strokeWidth = 12f })
+        return b
+    }
+
+    /** A solid rounded block with the name cut out of it. */
+    private fun inverted(ctx: Context, text: String): Bitmap {
+        val b = blank(); val c = Canvas(b)
+        val p = white().apply { typeface = poppins(ctx) }
+        val r = fitText(c, text, p, BOX_W - 150f, 200f, draw = false)
+        val box = RectF(r.left - 70f, r.top - 60f, r.right + 70f, r.bottom + 60f)
+        c.drawRoundRect(box, 46f, 46f, white())
+        c.drawText(text, lastX, lastY, Paint(p).apply { xfermode = PorterDuffXfermode(PorterDuff.Mode.CLEAR) })
+        return b
+    }
+
+    /** Two fainter copies trailing behind the name. */
+    private fun echo(ctx: Context, text: String): Bitmap {
+        val b = blank(); val c = Canvas(b)
+        val p = white().apply { typeface = poppins(ctx) }
+        fitText(c, text, p, BOX_W - 80f, 270f, cx = W / 2f + 20f, cy = H / 2f + 20f, draw = false)
+        val step = (p.textSize * 0.06f).coerceIn(8f, 22f)
+        c.drawText(text, lastX - step * 2, lastY - step * 2, Paint(p).apply { alpha = 60 })
+        c.drawText(text, lastX - step, lastY - step, Paint(p).apply { alpha = 120 })
+        c.drawText(text, lastX, lastY, p)
+        return b
+    }
+
+    /** Capitals sliced into bands that slip sideways, like a broken signal. */
+    private fun glitch(ctx: Context, text: String): Bitmap {
+        val src = blank()
+        val r = fitText(Canvas(src), text, white().apply { typeface = poppins(ctx) }, BOX_W - 80f, 260f)
+        val b = blank(); val c = Canvas(b)
+        val shifts = floatArrayOf(0f, 22f, -14f, 0f, 30f, -24f, 8f, 0f, -18f, 12f)
+        val bands = shifts.size
+        val h = (r.height() + 20f) / bands
+        for (i in 0 until bands) {
+            val top = (r.top - 10f + i * h).toInt(); val bot = (r.top - 10f + (i + 1) * h).toInt()
+            c.save(); c.clipRect(0, top, W, bot); c.drawBitmap(src, shifts[i], 0f, null); c.restore()
+        }
+        src.recycle()
+        return b
+    }
+
+    /** Bold letters filled with a dot screen, or with diagonal stripes. */
+    private fun pattern(ctx: Context, text: String, dots: Boolean): Bitmap {
+        val b = simple(white().apply { typeface = poppins(ctx) }, text, BOX_W, 320f)
+        val pat = blank(); val pc = Canvas(pat); val w = white()
+        if (dots) {
+            var y = 0f; while (y < H) { var x = 0f; while (x < W) { pc.drawCircle(x, y, 5.5f, w); x += 15f }; y += 15f }
+        } else {
+            w.strokeWidth = 11f
+            var x = -H.toFloat(); while (x < W) { pc.drawLine(x, H.toFloat(), x + H, 0f, w); x += 22f }
+        }
+        Canvas(b).drawBitmap(pat, 0f, 0f, dstIn)
+        pat.recycle()
+        return b
+    }
+
+    /** Solid at the top, fading away towards the bottom. */
+    private fun fade(ctx: Context, text: String): Bitmap {
+        val b = blank(); val c = Canvas(b)
+        val r = fitText(c, text, white().apply { typeface = poppins(ctx) }, BOX_W, 320f)
+        val g = Paint().apply {
+            shader = LinearGradient(0f, r.top, 0f, r.bottom, Color.WHITE, Color.argb(40, 255, 255, 255), Shader.TileMode.CLAMP)
+            xfermode = PorterDuffXfermode(PorterDuff.Mode.DST_IN)
+        }
+        c.drawRect(0f, 0f, W.toFloat(), H.toFloat(), g)
+        return b
+    }
+
+    /** Letters bobbing up and down along a wave. */
+    private fun wave(ctx: Context, text: String): Bitmap {
+        val b = blank(); val c = Canvas(b)
+        val p = white().apply { typeface = poppins(ctx) }
+        fitText(c, text, p, BOX_W - 40f, 220f, draw = false)
+        val amp = p.textSize * 0.12f
+        var x = lastX
+        text.forEachIndexed { i, ch ->
+            c.drawText(ch.toString(), x, lastY + (kotlin.math.sin(i * 0.9) * amp).toFloat(), p)
+            x += p.measureText(ch.toString())
+        }
+        return b
+    }
+
+    /** The name split over two lines, each as wide as the other. */
+    private fun stacked(ctx: Context, text: String): Bitmap {
+        val words = text.trim().split(Regex("\\s+"))
+        val (a, z) = if (words.size >= 2) words.first() to words.drop(1).joinToString(" ")
+            else text.length.let { n -> if (n < 4) return title(ctx, text) else text.substring(0, (n + 1) / 2) to text.substring((n + 1) / 2) }
+        val b = blank(); val c = Canvas(b)
+        fitText(c, a, white().apply { typeface = poppins(ctx) }, 720f, 175f, cy = H / 2f - 100f)
+        fitText(c, z, white().apply { typeface = poppins(ctx) }, 720f, 175f, cy = H / 2f + 100f)
+        return b
+    }
+
+    /** Capitals curving over the top of an arch. */
+    private fun arc(ctx: Context, text: String): Bitmap {
+        val b = blank(); val c = Canvas(b)
+        val p = white().apply { typeface = poppins(ctx); letterSpacing = 0.06f }
+        fitText(c, text, p, 820f, 190f, draw = false)
+        val rad = 900f; val cy = H / 2f + 70f + rad
+        val path = Path().apply { addArc(RectF(W / 2f - rad, cy - rad, W / 2f + rad, cy + rad), 238f, 64f) }
+        val len = android.graphics.PathMeasure(path, false).length
+        c.drawTextOnPath(text, path, (len - p.measureText(text)) / 2, 0f, p)
+        return b
+    }
+
+    /** Bold type at a jaunty angle. */
+    private fun tilt(ctx: Context, text: String): Bitmap {
+        val b = blank(); val c = Canvas(b)
+        c.rotate(-8f, W / 2f, H / 2f)
+        fitText(c, text, white().apply { typeface = poppins(ctx) }, BOX_W - 120f, 260f)
+        return b
+    }
+
+    /** Bold letters with a cut-out outline round them, like a sticker. */
+    private fun sticker(ctx: Context, text: String): Bitmap {
+        val b = blank(); val c = Canvas(b)
+        val p = white().apply { typeface = poppins(ctx); strokeJoin = Paint.Join.ROUND; strokeCap = Paint.Cap.ROUND }
+        fitText(c, text, p, BOX_W - 120f, 260f, draw = false)
+        val w = (p.textSize * 0.05f).coerceIn(8f, 22f)
+        c.drawText(text, lastX, lastY, Paint(p).apply { style = Paint.Style.STROKE; strokeWidth = w * 3.6f })
+        c.drawText(text, lastX, lastY, Paint(p).apply { style = Paint.Style.STROKE; strokeWidth = w * 2f; xfermode = PorterDuffXfermode(PorterDuff.Mode.CLEAR) })
+        c.drawText(text, lastX, lastY, p)
         return b
     }
 
