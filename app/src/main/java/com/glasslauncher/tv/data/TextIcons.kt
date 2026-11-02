@@ -44,6 +44,22 @@ object TextIcons {
     }
 
     private const val INK = 0xFF121214.toInt()
+
+    /** Background colours for the Default look (light → dark gradient). null = the style's own colours. */
+    class Colours(val label: String, val c0: Int, val c1: Int)
+    val COLOURS = listOf(
+        Colours("Purple", 0xFF7C3AED.toInt(), 0xFF1E1B4B.toInt()),
+        Colours("Blue", 0xFF2563EB.toInt(), 0xFF172554.toInt()),
+        Colours("Sky", 0xFF0EA5E9.toInt(), 0xFF0B2545.toInt()),
+        Colours("Teal", 0xFF14B8A6.toInt(), 0xFF134E4A.toInt()),
+        Colours("Green", 0xFF22C55E.toInt(), 0xFF14532D.toInt()),
+        Colours("Yellow", 0xFFEAB308.toInt(), 0xFF713F12.toInt()),
+        Colours("Orange", 0xFFF97316.toInt(), 0xFF431407.toInt()),
+        Colours("Red", 0xFFEF4444.toInt(), 0xFF5A140A.toInt()),
+        Colours("Pink", 0xFFEC4899.toInt(), 0xFF500724.toInt()),
+        Colours("Grey", 0xFF64748B.toInt(), 0xFF0F172A.toInt()),
+        Colours("Black", 0xFF27272A.toInt(), 0xFF09090B.toInt()),
+    )
     private var poppins: Typeface? = null
     private var mono: Typeface? = null
     private fun poppins(ctx: Context) = poppins ?: runCatching { Typeface.createFromAsset(ctx.assets, "fonts/poppins_bold.ttf") }
@@ -79,7 +95,7 @@ object TextIcons {
     }
 
     /** One look of the icon, built on [mask]. */
-    fun look(mask: Bitmap, style: Style, variant: String): Bitmap {
+    fun look(mask: Bitmap, style: Style, variant: String, colours: Colours? = null): Bitmap {
         if (variant == "clear") return mask.copy(Bitmap.Config.ARGB_8888, false)
         val out = Bitmap.createBitmap(W, H, Bitmap.Config.ARGB_8888)
         val c = Canvas(out)
@@ -87,7 +103,7 @@ object TextIcons {
             "dark" -> c.drawColor(INK)
             "white" -> c.drawColor(Color.WHITE)
             else -> c.drawRect(0f, 0f, W.toFloat(), H.toFloat(), Paint().apply {
-                shader = LinearGradient(0f, 0f, W.toFloat(), H.toFloat(), style.c0, style.c1, Shader.TileMode.CLAMP)
+                shader = LinearGradient(0f, 0f, W.toFloat(), H.toFloat(), colours?.c0 ?: style.c0, colours?.c1 ?: style.c1, Shader.TileMode.CLAMP)
             })
         }
         val p = Paint(Paint.FILTER_BITMAP_FLAG)
@@ -99,11 +115,11 @@ object TextIcons {
     fun png(b: Bitmap): ByteArray = ByteArrayOutputStream().also { b.compress(Bitmap.CompressFormat.PNG, 100, it) }.toByteArray()
 
     /** Saves all four looks into the icon library (Android/data/…/files/appletv/<look>/<name>.png). Blocking. */
-    fun saveToLibrary(ctx: Context, name: String, mask: Bitmap, style: Style) {
+    fun saveToLibrary(ctx: Context, name: String, mask: Bitmap, style: Style, colours: Colours? = null) {
         val dir = com.glasslauncher.tv.ui.appleTvDir(ctx)
         val file = name.replace(Regex("[\\\\/:*?\"<>|]+"), " ").trim().ifEmpty { "Icon" } + ".png"
         for (v in VARIANTS) {
-            val b = look(mask, style, v)
+            val b = look(mask, style, v, colours)
             File(dir, v).apply { mkdirs() }.resolve(file).writeBytes(png(b))
             b.recycle()
         }

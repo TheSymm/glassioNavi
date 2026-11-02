@@ -385,12 +385,14 @@ private fun TextMaker(app: GlassApp, s: Float, entry: AppEntry, onEdit: (DialogS
     var style by remember { mutableStateOf(com.glasslauncher.tv.data.TextIcons.Style.Title) }
     // Vertical nudge in icon pixels (1280 × 768): + is lower, − is higher, 10 per press.
     var dy by remember(entry.pkg) { mutableIntStateOf(0) }
-    val looks by produceState<List<Pair<String, android.graphics.Bitmap>>?>(null, text, style, dy) {
+    // Background of the Default look: null follows the style.
+    var colours by remember { mutableStateOf<com.glasslauncher.tv.data.TextIcons.Colours?>(null) }
+    val looks by produceState<List<Pair<String, android.graphics.Bitmap>>?>(null, text, style, dy, colours) {
         value = null
         value = withContext(Dispatchers.Default) {
             val m = com.glasslauncher.tv.data.TextIcons.mask(ctx, text, style, dy)
             com.glasslauncher.tv.data.TextIcons.VARIANTS.map { v ->
-                val full = com.glasslauncher.tv.data.TextIcons.look(m, style, v)
+                val full = com.glasslauncher.tv.data.TextIcons.look(m, style, v, colours)
                 v to android.graphics.Bitmap.createScaledBitmap(full, 480, 288, true).also { if (it !== full) full.recycle() }
             }.also { m.recycle() }
         }
@@ -416,6 +418,18 @@ private fun TextMaker(app: GlassApp, s: Float, entry: AppEntry, onEdit: (DialogS
                 PickButton((if (st == style) "● " else "") + st.label, s) { style = st }
             }
         }
+        Spacer(Modifier.height((8 * s).dp))
+        // Background colour of the Default look: Auto follows the style, or pick one.
+        androidx.compose.foundation.lazy.LazyRow(horizontalArrangement = Arrangement.spacedBy((8 * s).dp), verticalAlignment = Alignment.CenterVertically) {
+            item {
+                Text("Colour", color = Color.White.copy(alpha = 0.6f), fontSize = (11 * s).sp)
+            }
+            item { PickButton((if (colours == null) "● " else "") + "Auto", s) { colours = null } }
+            items(com.glasslauncher.tv.data.TextIcons.COLOURS.size) { i ->
+                val c = com.glasslauncher.tv.data.TextIcons.COLOURS[i]
+                ColourChip(c, c === colours, s) { colours = c }
+            }
+        }
         Spacer(Modifier.height((12 * s).dp))
         val list = looks
         if (list == null) { Hint("Drawing…", s); return@Column }
@@ -430,8 +444,8 @@ private fun TextMaker(app: GlassApp, s: Float, entry: AppEntry, onEdit: (DialogS
                     scope.launch {
                         val bytes = withContext(Dispatchers.IO) {
                             val m = com.glasslauncher.tv.data.TextIcons.mask(ctx, text, style, dy)
-                            runCatching { com.glasslauncher.tv.data.TextIcons.saveToLibrary(ctx, text, m, style) }
-                            val full = com.glasslauncher.tv.data.TextIcons.look(m, style, v)
+                            runCatching { com.glasslauncher.tv.data.TextIcons.saveToLibrary(ctx, text, m, style, colours) }
+                            val full = com.glasslauncher.tv.data.TextIcons.look(m, style, v, colours)
                             com.glasslauncher.tv.data.TextIcons.png(full).also { full.recycle(); m.recycle() }
                         }
                         onPick(bytes)
@@ -441,5 +455,22 @@ private fun TextMaker(app: GlassApp, s: Float, entry: AppEntry, onEdit: (DialogS
                 }
             }
         }
+    }
+}
+
+/** A round colour swatch to pick a background colour; grows and gets a ring when focused. */
+@Composable
+private fun ColourChip(c: com.glasslauncher.tv.data.TextIcons.Colours, chosen: Boolean, s: Float, onClick: () -> Unit) {
+    var f by remember { mutableStateOf(false) }
+    val size = ((if (f) 34 else 28) * s).dp
+    Box(
+        Modifier.width((36 * s).dp).height((36 * s).dp).onFocusChanged { f = it.isFocused }.tvPress(onClick = onClick),
+        contentAlignment = Alignment.Center,
+    ) {
+        Box(
+            Modifier.width(size).height(size).clip(RoundedCornerShape(50))
+                .background(Brush.linearGradient(listOf(Color(c.c0), Color(c.c1))))
+                .border(if (f || chosen) 3.dp else 1.dp, Color.White.copy(alpha = if (f) 1f else if (chosen) 0.8f else 0.25f), RoundedCornerShape(50)),
+        )
     }
 }
