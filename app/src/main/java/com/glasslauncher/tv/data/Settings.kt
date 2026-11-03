@@ -363,6 +363,12 @@ class Settings(private val ctx: Context) {
     var cameraCycleSec: Int get() = i("cameraCycleSec", 0); set(v) = putI("cameraCycleSec", if (v <= 0) 0 else v.coerceIn(5, 600))
     /** Doorbell pop-ups from Home Assistant (port 7979, PiPup's request). */
     var doorbellOn: Boolean get() = b("doorbellOn", true); set(v) = putB("doorbellOn", v)
+    /** Eufy: open the eufy app's live view when its doorbell notification arrives (EufyWatch). */
+    var eufyOpen: Boolean get() = b("eufyOpen", false); set(v) = putB("eufyOpen", v)
+    /** "ring" = only doorbell presses, "all" = any eufy alert (motion too). */
+    var eufyWhich: String get() = s("eufyWhich", "ring"); set(v) = putS("eufyWhich", v)
+    /** The last eufy notification seen (title · text), shown in Settings. */
+    var eufyLast: String get() = s("eufyLast", ""); set(v) = putS("eufyLast", v)
     var doorbellScale: Float get() = f("doorbellScale", 1.0f); set(v) = putF("doorbellScale", v.coerceIn(0.6f, 1.6f))
     var doorbellText: Boolean get() = b("doorbellText", true); set(v) = putB("doorbellText", v)
     var doorbellTitle: String get() = s("doorbellTitle", "الباب الأمامي"); set(v) = putS("doorbellTitle", v)

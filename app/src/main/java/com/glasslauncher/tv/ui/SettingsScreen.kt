@@ -707,6 +707,28 @@ fun SettingsScreen(app: GlassApp, initialCat: Int, onClose: () -> Unit) {
         },
         Category("Cameras") {
             buildList {
+                // Eufy (HomeBase / battery doorbells have no stream Glassio can play): the eufy app on the TV does it.
+                val eufyPkg = com.glasslauncher.tv.EufyWatch.EUFY_PKGS.firstOrNull { p -> runCatching { ctx.packageManager.getPackageInfo(p, 0) }.isSuccess }
+                val listenerOn = androidx.core.app.NotificationManagerCompat.getEnabledListenerPackages(ctx).contains(ctx.packageName)
+                add(Note("Eufy doorbell: 1) in the eufy app on your phone, doorbell settings → NAS (RTSP), copy its link and add it below with Add camera link, then pick it as the doorbell camera. 2) Install the eufy Security app on this TV, sign in and turn its notifications on. When the doorbell rings, the feed pops up in the corner."))
+                add(Toggle("Show the doorbell when Eufy rings", when {
+                    eufyPkg == null -> "The eufy Security app isn't installed on this TV"
+                    !listenerOn -> "Allow Glassio to see notifications first (below)"
+                    else -> "Ready"
+                }, { st.eufyOpen }, { st.eufyOpen = it }))
+                add(Adjust("  · Which alerts", "Doorbell only, or every eufy alert (motion and people too)",
+                    { if (st.eufyWhich == "all") "All eufy alerts" else "Doorbell only" },
+                    { st.eufyWhich = if (st.eufyWhich == "all") "ring" else "all" }))
+                add(Act("  · Allow Glassio to see notifications", if (listenerOn) "Allowed" else "Uses TV access (ADB), below. Google TV hides this permission", "", ok = listenerOn) {
+                    io {
+                        val me = "${ctx.packageName}/com.glasslauncher.tv.EufyWatch"
+                        val keep = com.glasslauncher.tv.EufyWatch.EUFY_PKGS.joinToString("; ") { "dumpsys deviceidle whitelist +$it 2>/dev/null" }
+                        // Notification access for Glassio, and keep the eufy app from being put to sleep (it must get its pushes).
+                        val r = com.glasslauncher.tv.data.LocalShell.run(ctx, "cmd notification allow_listener $me; $keep; true")
+                        if (r.isSuccess) "Glassio can see notifications" else "Allow TV access (ADB) first: Settings → System"
+                    }
+                })
+                add(Act("  · Last eufy alert", "What eufy sent last (to check a ring is recognised)", st.eufyLast.ifBlank { "None yet" }) {})
                 add(Note("Your cameras"))
                 add(Act("Find cameras", "Searches your network (ONVIF: Hikvision, Dahua, Reolink, Tapo, Amcrest, Axis…)", "") {
                     io {
